@@ -10,15 +10,15 @@ Following are some of the questions addressed in this analysis:
 
 Basic Questions
 
-a.	What is the distribution of number of passengers per trip?
-b.	What is the distribution of payment_type?
-c.	What is the distribution of fare amount?
-d.	What is the distribution of tip amount?
-e.	What is the distribution of total amount?
-f.	What are top 5 busiest hours of the day?
-g.	What are the top 10 busiest locations of the city?
-h.	Which trip has the highest standard deviation of travel time?
-i.	Which trip has most consistent fares? 
+a.	What is the distribution of number of passengers per trip?<br>
+b.	What is the distribution of payment_type?<br>
+c.	What is the distribution of fare amount?<br>
+d.	What is the distribution of tip amount?<br>
+e.	What is the distribution of total amount?<br>
+f.	What are top 5 busiest hours of the day?<br>
+g.	What are the top 10 busiest locations of the city?<br>
+h.	Which trip has the highest standard deviation of travel time?<br>
+i.	Which trip has most consistent fares?<br> 
 
 Open Questions
 
