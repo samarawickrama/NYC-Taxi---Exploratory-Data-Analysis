@@ -1,0 +1,18 @@
+
+```{r}
+# Clear workspace and free memory
+rm(list = ls())
+```
+
+
+```{r child = 'databaseHandle.Rmd'}
+```
+
+```{r child = 'basicQuestions.Rmd'}
+```
+
+```{r child = 'modeling.Rmd'}
+```
+
+```{r child = 'modelApply.Rmd'}
+```

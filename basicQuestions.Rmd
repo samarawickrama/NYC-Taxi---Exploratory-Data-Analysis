@@ -1,0 +1,289 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+
+<div itemscope>
+  <h2>Analysis of NYC Taxi Data</h1>
+  <span><h3>Answers to The Basic Questions</h3></span>
+</div>
+
+In this section, we study 10,000 random samples from our 100,000 sample records file. We haven't applied Bootstrap techniques in here for simplicity. The bootstrap method is applied to the next section where the modeling is performed.
+
+```{r}
+filename  <- "sampledData100000.csv";
+Dat100000 <- read.csv(filename);
+records     <- Dat100000[sample(1:nrow(Dat100000), 10000, replace=FALSE),]
+
+library(e1071)
+library(lubridate)
+library(geosphere)
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.a) What is the distribution of a number of passengers per trip?  
+
+```{r}
+hist(records$passenger_count)
+summary(records$passenger_count)
+```
+
+As shown in the histogram, the distribution is right-skewed (or Positive skewed). The mean is 1 passengers.
+The skewness can be estimated by:
+
+```{r}
+skewness(records$passenger_count)
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+b.	What is the distribution of payment_type?
+
+Payment type is a discrete variable.
+
+```{r}
+barplot(table(records$payment_type))
+```
+
+Note: CRD - Card, CSH - Cash
+Most of the transactions are either by card or cash.
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.c) What is the distribution of fare amount?
+
+```{r}
+hist(records$fare_amount)
+summary(records$fare_amount)
+```
+
+As shown in the histogram, the distribution is right-skewed (or Positive skewed). The mean is 1 passengers.
+The skewness can be estimated by:
+
+```{r}
+skewness(records$fare_amount)
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.d) What is the distribution of tip amount?
+
+```{r}
+hist(records$tip_amount)
+summary(records$tip_amount)
+```
+
+As shown in the histogram, the distribution is right-skewed (or Positive skewed). The mean is 1 passengers.
+The skewness can be estimated by:
+
+```{r}
+skewness(records$tip_amount)
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.e) What is the distribution of total amount?
+  
+```{r}
+hist(records$total_amount)
+summary(records$total_amount)
+```
+
+As shown in the histogram, the distribution is right-skewed (or Positive skewed). The mean is 1 passengers.
+The skewness can be estimated by:
+
+```{r}
+skewness(records$total_amount)
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.f) What are top 5 busiest hours of the day?
+
+It seems to be each day is different. We plot the busiest hour of each day.
+
+```{r}
+records$pickup_datetime_transformed <- ymd_hms(records$pickup_datetime)
+
+SUN <- records[wday(records$pickup_datetime_transformed) == 1,]
+MON <- records[wday(records$pickup_datetime_transformed) == 2,]
+TUE <- records[wday(records$pickup_datetime_transformed) == 3,]
+WED <- records[wday(records$pickup_datetime_transformed) == 4,]
+THU <- records[wday(records$pickup_datetime_transformed) == 5,]
+FRI <- records[wday(records$pickup_datetime_transformed) == 6,]
+SAT <- records[wday(records$pickup_datetime_transformed) == 7,]
+
+#SUNDAY
+hist(hour(SUN$pickup_datetime),xlim = c(0, 23))
+freqArraySun <- c(hour(SUN$pickup_datetime))
+names(sort(summary(as.factor(freqArraySun)), decreasing=T)[1:5])
+# MONDAY
+hist(hour(MON$pickup_datetime),xlim = c(0, 23))
+freqArrayMon <- c(hour(MON$pickup_datetime))
+names(sort(summary(as.factor(freqArrayMon)), decreasing=T)[1:5])
+# TUESDAY
+hist(hour(TUE$pickup_datetime),xlim = c(0, 23))
+freqArrayTue <- c(hour(TUE$pickup_datetime))
+names(sort(summary(as.factor(freqArrayTue)), decreasing=T)[1:5])
+# WEDNESDAY
+hist(hour(WED$pickup_datetime),xlim = c(0, 23))
+freqArrayWed <- c(hour(WED$pickup_datetime))
+names(sort(summary(as.factor(freqArrayWed)), decreasing=T)[1:5])
+# THURSDAY
+hist(hour(THU$pickup_datetime),xlim = c(0, 23))
+freqArrayThu <- c(hour(THU$pickup_datetime))
+names(sort(summary(as.factor(freqArrayThu)), decreasing=T)[1:5])
+# FRIDAY
+hist(hour(FRI$pickup_datetime),xlim = c(0, 23))
+freqArrayFri <- c(hour(FRI$pickup_datetime))
+names(sort(summary(as.factor(freqArrayFri)), decreasing=T)[1:5])
+# SATURDAY
+hist(hour(SAT$pickup_datetime),xlim = c(0,23))
+freqArraySat <- c(hour(SAT$pickup_datetime))
+names(sort(summary(as.factor(freqArraySat)), decreasing=T)[1:5])
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.g) What are the top 10 busiest locations of the city?
+
+To find this we perform K-mean clustering on pickup locations with 10 clusters. Then we identify the cluster centers as the busiest locations.
+
+```{r}
+# Let's clustering the GPS locations
+pickLoc <- data.frame(pickLat=records$pickup_latitude,pickLon=records$pickup_longitude)
+dropLoc <- data.frame(dropLat=records$dropoff_latitude,dropLon=records$dropoff_longitude)
+pickLoc <- pickLoc[pickLoc$pickLat <= 90 & pickLoc$pickLat > -90, ]
+pickLoc <- pickLoc[pickLoc$pickLon <= 180 & pickLoc$pickLon > -180, ]
+dropLoc <- dropLoc[dropLoc$dropLat <= 90 & dropLoc$dropLat > -90, ]
+dropLoc <- dropLoc[dropLoc$dropLon <= 180 & dropLoc$dropLon > -180, ]
+x1 <- c(pickLoc$pickLon)
+y1 <- c(pickLoc$pickLat)
+x2 <- c(dropLoc$dropLon)
+y2 <- c(dropLoc$dropLat)
+x <- c(x1,x2)
+y <- c(y1,y2)
+gpsCordinates <- cbind(x,y)
+plot(gpsCordinates, xlab="Longitudes", ylab="Latitudes")
+```
+
+I have just noticed some GPS points are zeros which are false. Some GPS locations are not in NYC. They have to be cleaned (outliers). To accurately clustering, we have to focus more on the high-density area 
+
+```{r}
+pickLoc <- data.frame(pickLat=records$pickup_latitude,pickLon=records$pickup_longitude)
+dropLoc <- data.frame(dropLat=records$dropoff_latitude,dropLon=records$dropoff_longitude)
+pickLoc <- pickLoc[pickLoc$pickLat < 40.85 & pickLoc$pickLat > 40.65, ]
+pickLoc <- pickLoc[pickLoc$pickLon < -73.93 & pickLoc$pickLon > -74.02, ]
+dropLoc <- dropLoc[dropLoc$dropLat < 40.85 & dropLoc$dropLat > 40.65, ]
+dropLoc <- dropLoc[dropLoc$dropLon < -73.93 & dropLoc$dropLon > -74.02, ]
+x1 <- c(pickLoc$pickLon)
+y1 <- c(pickLoc$pickLat)
+x2 <- c(dropLoc$dropLon)
+y2 <- c(dropLoc$dropLat)
+x <- c(x1,x2)
+y <- c(y1,y2)
+gpsCordinates <- cbind(x,y)
+plot(gpsCordinates, xlab="Longitudes", ylab="Latitudes")
+
+# Since our data are cleaned, let's do the clustering now.
+gpsCordinates <- cbind(x,y)
+kc <- kmeans(gpsCordinates, 10)
+plot(gpsCordinates, col=kc$cluster, xlab="Longitudes", ylab="Latitudes")
+points(kc$centers,cex=2)
+
+# The GPS coordinates of the 10 busiest locations are
+kc$centers
+```
+
+The above cluster centers are the busiest locations in NYC.
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.h) Which trip has the highest standard deviation of travel time?
+
+To find this, I will find the trip having largest time difference to the mean of the travel time.
+
+```{r}
+travelTimeSD = (records$trip_time_in_secs - mean(records$trip_time_in_secs))^2
+
+which.max(travelTimeSD)
+
+records[which.max(travelTimeSD),]
+```
+
+<div id="bg">
+  <img src="./img/breakSec.png" alt="">
+</div>
+
+1.i)	Which trip has most consistent fares? 
+
+To find this, I will first check the distribution of the fare.
+
+```{r}
+hist(records$fare_amount)
+
+summary(as.factor(records$fare_amount))
+
+names(sort(summary(as.factor(records$fare_amount)), decreasing=T)[1])
+```
+
+The above is the most consistent fare. To find out what this trip is, let's study the distance and travel time corresponding to that fare.
+
+```{r}
+consistentTime <- names(sort(summary(as.factor(records$fare_amount)), decreasing=T)[1]);
+tripFare  <- data.frame(pickLat=records$pickup_latitude,pickLon=records$pickup_longitude,
+                        dropLat=records$dropoff_latitude,dropLon=records$dropoff_longitude,
+                        fare=records$fare_amount)
+tripFare  <- tripFare[tripFare$pickLat!=0 & tripFare$pickLon!=0, ]
+tripFare  <- tripFare[tripFare$dropLat!=0 & tripFare$dropLon!=0, ]
+tripFare  <- tripFare[tripFare$fare==consistentTime, ]
+x1 <- c(tripFare$pickLon)
+y1 <- c(tripFare$pickLat)
+x2 <- c(tripFare$dropLon)
+y2 <- c(tripFare$dropLat)
+
+distMat <- distm (cbind(y1,x1), cbind(y2,x2), fun = distHaversine);
+hist(diag(distMat))
+summary(diag(distMat))
+
+tripTime <- data.frame(tripDuration=records$trip_time_in_secs, fare=records$fare_amount)
+tripTime <- tripTime[tripTime$fare==consistentTime,]
+hist(tripTime$tripDuration)
+summary(tripTime$tripDuration)
+```
+
+As per the distributions of distance and time, this fare is for regular short trips. Mean of the distance and time has been calculated above. They are approximately 1km trips of around 6 minutes. This may be confirmed by the corresponding pickup and dropoff locations where all are within the city.
+
+Pickup Locations
+```{r}
+gpsPickCordinates <- cbind(x1,y1)
+plot(gpsPickCordinates, xlab="Longitudes", ylab="Latitudes")
+```
+
+Dropoff Locations
+```{r}
+gpsDropCordinates <- cbind(x2,y2)
+plot(gpsDropCordinates, xlab="Longitudes", ylab="Latitudes")
+```
+
+<div id="bg">
+  <img src="./img/break.png" alt="">
+</div>

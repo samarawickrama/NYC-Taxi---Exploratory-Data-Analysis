@@ -1,0 +1,326 @@
+
+<div itemscope>
+  <h2>Analysis of NYC Taxi Data</h1>
+  <span><h3>How to Handle Big Data Using MySQL Database</h3></span>
+</div>
+
+In this document, we investigate public NYC taxi data. The data can be downloaded from the following links:
+
+https://drive.google.com/file/d/0B3o2JsiUpwEvLTRDNkEyZmZZM1U/view?usp=sharing
+
+https://drive.google.com/file/d/0B3o2JsiUpwEvSlU2RFVHZUJZeFk/view?usp=sharing
+
+There are two CSV files for data and fare. They are big files and ~2.5GB and ~1.7GB respectively.
+
+<div id="bg">
+  <img src="./img/data_size.png" alt="">
+</div>
+
+We used R software to analyze the data. R is free and can be installed as follows:
+
+https://github.com/genomicsclass/windows#installing-r
+
+The number of rows in each file are as follows:
+
+```{r}
+# # install.packages("sqldf")
+# library(sqldf)
+# # Calculate the number of records in SQL fashion. The csv file will not be loaded to the memory. Very slow.
+# read.csv.sql("trip_data_4.csv", sql = "select count(medallion) from file")
+# read.csv.sql("trip_fare_4.csv", sql = "select count(medallion) from file")
+```
+
+And the header information of the two tables are:
+
+```{r}
+# In this analysis we assume the platform has memory constrain and we don't load full data to RAM.
+# Read the headers of the two files
+# scan("trip_data_4.csv", nlines = 1, what = character())
+# scan("trip_fare_4.csv", nlines = 1, what = character())
+```
+
+Based on the information we can sumarizes the following:
+
+```{r}
+# [1] "record_id"          "medallion"          "hack_license"       "vendor_id"          "rate_code"         
+# [6] "store_and_fwd_flag" "pickup_datetime"    "dropoff_datetime"   "passenger_count"    "trip_time_in_secs" 
+#[11] "trip_distance"      "pickup_longitude"   "pickup_latitude"    "dropoff_longitude"  "dropoff_latitude"  
+#[16] "payment_type"       "fare_amount"        "surcharge"          "mta_tax"            "tip_amount"        
+#[21] "tolls_amount"       "total_amount" 
+```
+
+Most of the header names are self descriptive. Some of the special names are:
+
+1) Each car has a medallion (a badge) to uniquely identify the taxi.
+2) The hack license is for the driver which authorizes the driver to drive a taxicab.
+3) The vendor id is the electronic system assigned to the taxi such as Verifone Transportation Systems (VTS), Mobile Knowledge Systems Inc (CMT), etc.
+4) The rate code is a taximeter rate category which is assigned by an authority.
+
+Since the CSV files are large, processing it without a database technology is very slow. Therefore, we used free MySQL database to clean and query the data as fast as possible. My SQL installer can be downloaded from the following link.
+
+https://dev.mysql.com/downloads/installer/
+
+Once installed, we have changed the following parameter,
+
+innodb_buffer_pool_size=500M   
+
+in the ".ini" file to fast process the big files. By default, it is 11M which is small.
+
+We have created two tables and uploaded the 2 CSV files. The database is created by default as sakila. The 2 tables we created are tb_nyt_data and tb_nyt_fare. We created the tables using GUI as follows:
+
+<div id="bg">
+  <img src="./img/table_data_gui.png" alt="">
+</div>
+
+<div id="bg">
+  <img src="./img/table_fare_gui.png" alt="">
+</div>
+
+However, they can be created by SQL transactions as follows:
+
+CREATE TABLE `tb_nyt_data` (  
+  `medallion` tinytext,  
+  `hack_license` tinytext,  
+  `vendor_id` tinytext,  
+  `rate_code` tinyint(2) DEFAULT NULL,  
+  `store_and_fwd_flag` char(1) DEFAULT NULL,  
+  `pickup_datetime` datetime DEFAULT NULL,  
+  `dropoff_datetime` datetime DEFAULT NULL,  
+  `passenger_count` tinyint(2) DEFAULT NULL,  
+  `trip_time_in_secs` int(11) DEFAULT NULL,  
+  `trip_distance` float DEFAULT NULL,  
+  `pickup_longitude` float DEFAULT NULL,  
+  `pickup_latitude` float DEFAULT NULL,  
+  `dropoff_longitude` float DEFAULT NULL,  
+  `dropoff_latitude` float DEFAULT NULL  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;  
+
+and 
+
+CREATE TABLE `tb_nyt_fare` (  
+  `medallion` tinytext,  
+  `hack_license` tinytext,  
+  `vendor_id` tinytext,  
+  `pickup_datetime` datetime DEFAULT NULL,  
+  `payment_type` tinytext,  
+  `fare_amount` float DEFAULT NULL,  
+  `surcharge` float DEFAULT NULL,  
+  `mta_tax` float DEFAULT NULL,  
+  `tip_amount` float DEFAULT NULL,  
+  `tolls_amount` float DEFAULT NULL,  
+  `total_amount` float DEFAULT NULL  
+) ENGINE=InnoDB DEFAULT CHARSET=utf8; 
+
+as well. The SQL commands can be issued via MySQL client as follow.
+
+<div id="bg">
+  <img src="./img/mysql_client.png" alt="">
+</div>
+
+After creating the tables in the database, we have uploaded the large CSV files to their respective tables. Following are the respective 2 SQL queries.
+
+TRUNCATE sakila.tb_nyt_data;  
+LOAD DATA LOCAL INFILE 'trip_data_4.csv'   
+IGNORE INTO TABLE sakila.tb_nyt_data  
+FIELDS TERMINATED BY ','  
+LINES TERMINATED BY '\r\n'  
+IGNORE 1 LINES;  
+
+TRUNCATE sakila.tb_nyt_fare;  
+LOAD DATA LOCAL INFILE 'trip_fare_4.csv'   
+IGNORE INTO TABLE sakila.tb_nyt_fare  
+FIELDS TERMINATED BY ','  
+LINES TERMINATED BY '\r\n'  
+IGNORE 1 LINES;  
+
+Next have counted the number of records in each table as follow:
+
+mysql> select count(medallion) from sakila.tb_nyt_data;  
++------------------+  
+| count(medallion) |  
++------------------+  
+|         15100468 |  
++------------------+  
+1 row in set (14.98 sec)  
+  
+mysql> select count(medallion) from sakila.tb_nyt_fare;  
++------------------+  
+| count(medallion) |  
++------------------+  
+|         15100468 |  
++------------------+  
+1 row in set (14.90 sec)
+
+Note that this count is matched with the count we calculated using the CSV files using R.
+
+Now we have to check whether the common fields of both tables are identical so we can merge the 2 tables. We already know that both tables have the same number of records. Comparison of a large table is time-consuming without a unique index column. Therefore, we add an index column (i.e., record_id) to both tables as follows:
+
+ALTER TABLE sakila.tb_nyt_data ADD COLUMN record_id INT AUTO_INCREMENT UNIQUE FIRST;  
+
+ALTER TABLE sakila.tb_nyt_fare ADD COLUMN record_id INT AUTO_INCREMENT UNIQUE FIRST;  
+
+Now we have an index in the tables. Since there are a lot of records, comparing an entire column is time-consuming. Therefore, we randomly selected few rows in both tables and compared the common columns. Following is the result of comparing 5 random 'medallion' and 'pickup_datetime'. 
+
+SELECT sakila.tb_nyt_data.medallion, sakila.tb_nyt_data.pickup_datetime, GROUP_CONCAT(sakila.tb_nyt_fare.medallion, sakila.tb_nyt_fare.pickup_datetime)      
+FROM sakila.tb_nyt_data      
+LEFT JOIN sakila.tb_nyt_fare      
+ON sakila.tb_nyt_data.record_id = sakila.tb_nyt_fare.record_id      
+GROUP BY sakila.tb_nyt_data.record_id      
+ORDER BY RAND() LIMIT 5;    
+
++----------------------------------+---------------------+----------------------------------------------------+    
+| medallion                        | pickup_datetime     | GROUP_CONCAT(sakila.tb_nyt_fare.medallion, sakila.tb_nyt_fare.pickup_datetime) |      
++----------------------------------+---------------------+----------------------------------------------------+     
+| 1FB2BF12B504498BC8B7B860294CD372 | 2013-04-04 18:12:00 | 1FB2BF12B504498BC8B7B860294CD3722013-04-04 18:12:00                            |      
+| 38A7CAA4DAC9F9BA44AF2621988B1D27 | 2013-04-11 12:58:00 | 38A7CAA4DAC9F9BA44AF2621988B1D272013-04-11 12:58:00                            |      
+| 0FB2153FD9CF9B210B0C68D9986BA692 | 2013-04-24 21:37:00 | 0FB2153FD9CF9B210B0C68D9986BA6922013-04-24 21:37:00                            |      
+| 036FCBDB6ABA5E1E578FA85E377A454D | 2013-04-27 16:04:37 | 036FCBDB6ABA5E1E578FA85E377A454D2013-04-27 16:04:37                            |      
+| C904476CB6A88781EDCB3A453C6A9028 | 2013-04-18 03:50:19 | C904476CB6A88781EDCB3A453C6A90282013-04-18 03:50:19                            |      
++----------------------------------+---------------------+----------------------------------------------------+     
+
+Since a given car in a given pickup time uniquely identify an event, having the same value in random locations determine the rows in 2 tables are 1 to 1 related.
+
+Since the two tables have identical common columns, we can join the two tables. Joining the tables is fast with the index key 'record_id'. The new table 'tb_nyt_comb' was created using the following MySQL query.
+
+CREATE TABLE `tb_nyt_comb` (  
+  `record_id` INT NOT NULL,   
+	`medallion` TINYTEXT NULL,  
+	`hack_license` TINYTEXT NULL,  
+	`vendor_id` TINYTEXT NULL,  
+	`rate_code` TINYINT(4) NULL DEFAULT NULL,  
+	`store_and_fwd_flag` CHAR(1) NULL DEFAULT NULL,  
+	`pickup_datetime` DATETIME NULL DEFAULT NULL,  
+	`dropoff_datetime` DATETIME NULL DEFAULT NULL,  
+	`passenger_count` TINYTEXT NULL,  
+	`trip_time_in_secs` INT(11) NULL DEFAULT NULL,  
+	`trip_distance` FLOAT NULL DEFAULT NULL,  
+	`pickup_longitude` FLOAT NULL DEFAULT NULL,  
+	`pickup_latitude` FLOAT NULL DEFAULT NULL,  
+	`dropoff_longitude` FLOAT NULL DEFAULT NULL,  
+	`dropoff_latitude` FLOAT NULL DEFAULT NULL,  
+	`payment_type` TINYTEXT NULL,  
+	`fare_amount` FLOAT NULL DEFAULT NULL,  
+	`surcharge` FLOAT NULL DEFAULT NULL,  
+	`mta_tax` FLOAT NULL DEFAULT NULL,  
+	`tip_amount` FLOAT NULL DEFAULT NULL,  
+	`tolls_amount` FLOAT NULL DEFAULT NULL,  
+	`total_amount` FLOAT NULL DEFAULT NULL,  
+	PRIMARY KEY (record_id)   
+)  
+ENGINE=InnoDB; 
+
+Then the data was inserted into new table from 'tb_nyt_data' and 'tb_nyt_fare' using the indexing.
+
+INSERT INTO sakila.tb_nyt_comb     
+(record_id,  
+medallion,      
+hack_license,      
+vendor_id,      
+rate_code,      
+store_and_fwd_flag,      
+pickup_datetime,      
+dropoff_datetime,      
+passenger_count,      
+trip_time_in_secs,      
+trip_distance,      
+pickup_longitude,      
+pickup_latitude,      
+dropoff_longitude,      
+dropoff_latitude,    
+payment_type,    
+fare_amount,    
+surcharge,    
+mta_tax,    
+tip_amount,    
+tolls_amount,    
+total_amount)    
+SELECT   
+sakila.tb_nyt_data.record_id,  
+sakila.tb_nyt_data.medallion,      
+sakila.tb_nyt_data.hack_license,      
+sakila.tb_nyt_data.vendor_id,      
+sakila.tb_nyt_data.rate_code,      
+sakila.tb_nyt_data.store_and_fwd_flag,      
+sakila.tb_nyt_data.pickup_datetime,      
+sakila.tb_nyt_data.dropoff_datetime,      
+sakila.tb_nyt_data.passenger_count,      
+sakila.tb_nyt_data.trip_time_in_secs,      
+sakila.tb_nyt_data.trip_distance,      
+sakila.tb_nyt_data.pickup_longitude,      
+sakila.tb_nyt_data.pickup_latitude,      
+sakila.tb_nyt_data.dropoff_longitude,      
+sakila.tb_nyt_data.dropoff_latitude,    
+sakila.tb_nyt_fare.payment_type,    
+sakila.tb_nyt_fare.fare_amount,    
+sakila.tb_nyt_fare.surcharge,    
+sakila.tb_nyt_fare.mta_tax,    
+sakila.tb_nyt_fare.tip_amount,    
+sakila.tb_nyt_fare.tolls_amount,    
+sakila.tb_nyt_fare.total_amount    
+FROM     
+sakila.tb_nyt_data    
+INNER JOIN     
+sakila.tb_nyt_fare    
+ON     
+sakila.tb_nyt_data.record_id = sakila.tb_nyt_fare.record_id;  
+
+Once we combined the 2 tables, we damped 100000 random records for statistical analysis. The MySQL query to dump the data is as follows:
+
+SELECT * FROM sakila.tb_nyt_comb   
+GROUP BY sakila.tb_nyt_comb.record_id        
+ORDER BY RAND() LIMIT 100000       
+INTO OUTFILE 'C:/temp/results.csv'  
+FIELDS TERMINATED BY ','    
+LINES TERMINATED BY '\r\n';  
+
+Note that for this to be sucessful, MySQL ".ini"" file should be changed as follows,
+
+Secure File Priv.    
+secure-file-priv="C:/temp"  
+[mysqld]  
+tmpdir=C:/temp  
+
+and restart the MySQL service. Then following MySQL query should be like this:
+
+SHOW VARIABLES LIKE 'secure_file_priv';    
++------------------+----------+    
+| Variable_name    | Value    |    
++------------------+----------+    
+| secure_file_priv | C:\temp\ |    
++------------------+----------+
+
+Note that from now on our new CSV file has following headers consecutively,
+
+record_id     
+medallion     
+hack_license     
+vendor_id     
+rate_code     
+store_and_fwd_flag     
+pickup_datetime     
+dropoff_datetime     
+passenger_count     
+trip_time_in_secs     
+trip_distance     
+pickup_longitude      
+pickup_latitude     
+dropoff_longitude     
+dropoff_latitude     
+payment_type     
+fare_amount     
+surcharge     
+mta_tax     
+tip_amount     
+tolls_amount     
+total_amount 
+
+with 100000 records.
+
+<div id="bg">
+  <img src="./img/break.png" alt="">
+</div>
+
+
+
+
+
