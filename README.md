@@ -5,3 +5,33 @@ The NYC-Taxi data is an interesting big data problem. Here we try to solve some 
 For more information about the dataset can be found from the below link.
 
 http://hafen.github.io/taxi/
+
+Following are some of the questions addressed in this analysis:
+
+Basic Questions
+
+a.	What is the distribution of number of passengers per trip?
+b.	What is the distribution of payment_type?
+c.	What is the distribution of fare amount?
+d.	What is the distribution of tip amount?
+e.	What is the distribution of total amount?
+f.	What are top 5 busiest hours of the day?
+g.	What are the top 10 busiest locations of the city?
+h.	Which trip has the highest standard deviation of travel time?
+i.	Which trip has most consistent fares? 
+
+Open Questions
+
+a.	In what trips can you confidently use respective means as measures of central tendency to estimate fare, time taken, etc.
+b.	Can we build a model to predict fare and tip amount given pick up and drop off coordinates, time of day and week?
+c.	If you were a taxi owner, how would you maximize your earnings in a day?
+d.	If you were a taxi owner, how would you minimize your work time while retaining the average wages earned by a typical taxi in the dataset?
+e.	If you run a taxi company with 10 taxis, how would you maximize your earnings?
+
+Data Details
+
+•	Trip fare data:
+o	medallion, hack_license, vendor_id, pickup_datetime, payment_type, fare_amount, surcharge, mta_tax, tip_amount, tolls_amount, total_amount
+•	Trip Details Data
+o	medallion, hack_license, vendor_id, rate_code, store_and_fwd_flag, pickup_datetime, dropoff_datetime, passenger_count, trip_time_in_secs, trip_distance, pickup_longitude, pickup_latitude, dropoff_longitude, dropoff_latitude
+
