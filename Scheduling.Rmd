@@ -5,14 +5,14 @@ rm(list = ls())
 ```
 
 
-```{r child = 'databaseHandle.Rmd'}
+```{r child = 'Database_Handler.Rmd'}
 ```
 
-```{r child = 'basicQuestions.Rmd'}
+```{r child = 'Exploratory_Data_Analysis.Rmd'}
 ```
 
-```{r child = 'modeling.Rmd'}
+```{r child = 'Modelling.Rmd'}
 ```
 
-```{r child = 'modelApply.Rmd'}
+```{r child = 'Prescriptive_Analytics.Rmd'}
 ```
