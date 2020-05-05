@@ -63,7 +63,7 @@ seqPickLon <- seq(-74.02, -73.93, length.out = resGPS)
 nycModelFare <- array(0,dim=c(resGPS,resGPS,2))
 
 for (m in 1:100){
-  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
   requestedData <- lmDataSampled[lmDataSampled$day==requestedDay & lmDataSampled$hour==requestedHour, ]
   for (n in 1:nrow(requestedData)){
     i <- match(round(requestedData$pickLat[n], digits = numDigitGps), round(seqPickLat, digits = numDigitGps))       
@@ -108,7 +108,7 @@ seqPickLon <- seq(-74.02, -73.93, length.out = resGPS)
 nycModelTip <- array(0,dim=c(resGPS,resGPS,2))
 
 for (m in 1:100){
-  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
   requestedData <- lmDataSampled[lmDataSampled$day==requestedDay & lmDataSampled$hour==requestedHour, ]
   for (n in 1:nrow(requestedData)){
     i <- match(round(requestedData$pickLat[n], digits = numDigitGps), round(seqPickLat, digits = numDigitGps))       
@@ -134,7 +134,7 @@ The Tip has a relationship with the day and the hour. Following intensity map sh
 numSamples <- 10000
 tipMat <- matrix(0, nrow=7, ncol=24)
 
-lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
 
 for (k in 1:numSamples){
   tipMat[lmDataSampled$day[k],lmDataSampled$hour[k]+1] <- tipMat[lmDataSampled$day[k],lmDataSampled$hour[k]+1] + lmDataSampled$tip[k]
@@ -151,7 +151,7 @@ We identified the Tip has a relationship with the speed. People like to travel r
 ```{R}
 numSamples <- 10000
 
-lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
 requestedData <- lmDataSampled[lmDataSampled$tip>median(lmDataSampled$tip), ]
 
 x1 <- c(requestedData$pickLat)
@@ -194,7 +194,7 @@ numSamples <- 10000
 plot(c(-74.02,-73.93), c(40.65,40.85), col="white", xlab="Longitudes", ylab="Latitudes")
 bigCluster <- data.frame(x=-73.95,y=40.75);
 for (i in c(1:maxItter)){
-  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
   requestedData <- lmDataSampled[lmDataSampled$day==requestedDay & lmDataSampled$hour==requestedHour, ]
   x <- c(requestedData$pickLon)
   y <- c(requestedData$pickLat)
@@ -226,7 +226,7 @@ seqPickLon <- seq(-74.02, -73.93, length.out = resGPS)
 nycModelFare <- array(0,dim=c(resGPS,resGPS,2))
 
 for (m in 1:100){
-  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=FALSE),]
+  lmDataSampled <- lmData[sample(1:nrow(lmData), numSamples, replace=TRUE),]
   requestedData <- lmDataSampled[lmDataSampled$day==requestedDay & lmDataSampled$hour==requestedHour, ]
   for (n in 1:nrow(requestedData)){
     i <- match(round(requestedData$pickLat[n], digits = numDigitGps), round(seqPickLat, digits = numDigitGps))       

@@ -2,8 +2,8 @@
 ```{r}
 # Clear workspace and free memory
 rm(list = ls())
+options(expressions= 500000) # This will increase the recursion depth to 500000
 ```
-
 
 ```{r child = 'Database_Handler.Rmd'}
 ```
